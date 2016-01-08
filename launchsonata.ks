@@ -1,7 +1,8 @@
-// LaunchMath.ks
+// LaunchSonata.ks
 //   Math-based launch script for Kerbal OS.
 //   Author: Andy Cummings (@cydonian_monk)
 //
+//   Intended for use only with LV-04 Sonata.
 //   Code assumes a vehicle designed to have a launch TWR of 1.05 to 1.1, with
 //   similar ~1.0 TWRs of all upper stages.
 //
@@ -10,6 +11,7 @@
 declare TarApo to 130000.
 declare TarPer to 120000.
 declare TarHoriAlt to 44000.
+declare TarSubHoriAlt to 52000.
 declare TarAzi to 90.
 declare TarAoa to 0.
 declare MinAoa to -45.
@@ -17,8 +19,17 @@ declare TrajSlope to 90 / TarHoriAlt.
 declare ActiveStage to 0.
 declare OrbitalStage to 3.
 
-print "T minus 10.".
-wait 10.
+list engines in CurVessel.
+for eng in CurVessel {
+  set LastEngine to eng.  
+}
+
+set VarCount to 10.
+until VarCount = 0 {
+  print "T minus " + VarCount + ".".
+  wait 1.
+  set VarCount to VarCount - 1.
+}
 
 lock steering to heading(90,90).
 lock throttle to 1.0.
@@ -28,61 +39,64 @@ stage.
 set ActiveStage to ActiveStage + 1.
 
 // TODO AWC - Allow for fairing jettison above select atmospheric limit.
-// TODO AWC - Adapt for multi-staged vehicles; ex: Soyuz and STS. This will 
-//            require detection of parallel stages which lose thrust.... 
-//            Might be something that's better hard-coded.
-// TODO AWC - Allow for hot-staging, which will need to check for fuel 
-//            remaining in the current stage.
 // TODO AWC - Allow for non-destructive staging. The current method will
 //            explode the previous stage from exhaust, resulting in debris.
+when LastEngine:FLAMEOUT then {
+  print "Radial burnout: " + LastEngine:NAME + ".".
+  stage.
+  print "Stage " + ActiveStage + " separation.".
+  set ActiveStage to ActiveStage + 1.
+}
+
+when altitude > 52000 then {
+  // decouple fairings.
+}
+
 when maxthrust = 0 then {
   print "Stage " + ActiveStage + " separation.".
-  //stage. 
-  set ActiveStage to ActiveStage + 1.    
+  set ActiveStage to ActiveStage + 1.
   print "Beginning Stage " + ActiveStage + " burn.".
   stage.
-  if (ActiveStage < OrbitalStage) {
+  if (ActiveStage <= OrbitalStage) {
     preserve.
   }
 }
 
-// TODO AWC - airspeed?
 set TarAoa to 90.
-//until ship:velocity:surface:mag > 100 {
 until airspeed > 100 {
   lock steering to heading(TarAzi,TarAoa).
 }
 
-until apoapsis > TarApo {
+until apoapsis > TarApo - 5000 {
   if altitude > TarHoriAlt {
     break.
   }
   set TarAoa to (TarHoriAlt - altitude) * TrajSlope.
   lock steering to heading(TarAzi,TarAoa).
 }
-set TarAoa to 0.
-lock steering to heading(TarAzi,TarAoa).  
+
+print "Burning to Apoapsis.".
+
+until apoapsis > TarApo - 5000 {
+  set TarAoa to (TarSubHoriAlt - altitude) * TrajSlope.
+  if (TarAoa < -15) {
+    set TarAoa to -15.
+  }
+  if (TarAoa > 0) {
+    set TarAoa to 0.
+  }
+  lock steering to heading(TarAzi,TarAoa).
+}
 
 // TODO AWC - Allow for multi-azimuth launches, such as GEO-bound launches from Canaveral.
 
-print "Burning to Apoapsis.".
-until apoapsis > TarApo {
-  wait 0.1.
-}
-
-// TODO AWC - Allow for down-burns. (Where heading goes below 0 degrees.) 
-//            Not important in stock, but in RSS/RO this will allow for burns to 
-//            apoapsis without wasting ignitions.
-
-print "Target Apoapsis achieved, beginning down-burn.".
+print "Target Apoapsis achieved, continuing burn.".
 
 lock throttle to 0.11.
 set PrevApo to apoapsis.
-set TarAoa to -30.
 lock steering to heading(TarAzi,TarAoa).
-wait 3.
 
-until TarAoa < MinAoa {
+until periapsis + 1000 > altitude {
   if apoapsis > PrevApo {
     set TarAoa to TarAoa - 1.0.
   }
@@ -98,8 +112,11 @@ until TarAoa < MinAoa {
     print "Excessive over-peri.".
     break.
   }
+  if TarAoa < MinAoa {
+    set TarAoa to MinAoa.
+  }
   lock steering to heading(TarAzi,TarAoa).
-  wait 0.01.
+  wait 0.1.
 }
 set TarAzi to 90.
 set TarAoa to 0.
