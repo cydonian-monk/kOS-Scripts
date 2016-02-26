@@ -2,6 +2,40 @@
 //   Simple kOS landing script for pulse-based lander.
 //   Author: Andy Cummings (@cydonian_monk)
 
+declare function DescentBurn {
+	parameter AltCutOff.
+	parameter SpdVertical.
+	parameter SpdGround.
+	
+	if 0 = SpdGround {
+		Set SpdGround to SpdVertical.
+	}
+
+	print "Descent until " + AltCutoff + " Vertical Speed " + SpdVertical + " Ground Speed " + SpdGround.
+	
+	until AltCutOff > alt:radar {
+		if SpdGround < ship:groundspeed {
+			set TRate to 1.
+		}
+		else if (-1.05 * SpdVertical) > ship:verticalspeed { 
+			if 1 > TRate {
+				set TRate to TRate + 0.01.
+			}
+		}
+		else if (-0.95 * SpdVertical) < ship:verticalspeed {
+			if 0 < TRate {
+				set TRate to TRate - 0.01.
+			}
+		}
+		lock throttle to TRate.
+		lock steering to (-1) * ship:velocity:surface.
+	}
+
+	return.
+}.
+
+
+
 declare TRate to 1.
 
 sas off.
@@ -16,102 +50,33 @@ until VarCount = 0 {
 
 lock throttle to TRate.
 
-print "Starting descent burn...".
+print "Starting de-orbit burn...".
 
 until -1000 > periapsis {
 	lock steering to (-1) * ship:velocity:surface.
 }
 
-print "Entering first descent phase.".
+print "Entering descent drift phase.".
 
 until 0 > ship:verticalspeed {
 	lock steering to (-1) * ship:velocity:surface.
 }
 
-print "Entering second descent phase.".
+print "Entering descent phase.".
 
-until 2000 > alt:radar {
-	if 200 < ship:groundspeed {
-		set TRate to 1.
-	}
-	else if -200 > ship:verticalspeed { 
-		if 1 > TRate {
-			set TRate to TRate + 0.01.
-		}
-	}
-	else if -180 < ship:verticalspeed {
-		if 0 < TRate {
-			set TRate to TRate - 0.01.
-		}
-	}
-	lock throttle to TRate.
-	lock steering to (-1) * ship:velocity:surface.
-}
-
-print "Entering third descent phase.".
-
-until 1000 > alt:radar {
-	if 50 < ship:groundspeed {
-		set TRate to 1.
-	}
-	if -30 > ship:verticalspeed { 
-		if 1 > TRate {
-			set TRate to TRate + 0.01.
-		}
-	}
-	else if -25 < ship:verticalspeed {
-		if 0 < TRate {
-			set TRate to TRate - 0.01.
-		}
-	}
-	lock throttle to TRate.
-	lock steering to (-1) * ship:velocity:surface.
-}
-
-print "Entering third descent phase.".
-
-until 100 > alt:radar {
-	if 25 < ship:groundspeed {
-		set TRate to 1.
-	}
-	if -12 > ship:verticalspeed { 
-		if 1 > TRate {
-			set TRate to TRate + 0.01.
-		}
-	}
-	else if -10 < ship:verticalspeed {
-		if 0 < TRate {
-			set TRate to TRate - 0.01.
-		}
-	}
-	lock throttle to TRate.
-	lock steering to (-1) * ship:velocity:surface.	
-}
+DescentBurn(2000, 200, 300).
+DescentBurn(1000, 30, 50).
+DescentBurn(100, 25, 10).
 
 print "Entering final descent phase.".
 
-until 1 > alt:radar {
-	if 10 < ship:groundspeed {
-		set TRate to 1.
-	}
-	if -4 > ship:verticalspeed { 
-		if 1 > TRate {
-			set TRate to TRate + 0.01.
-		}
-	}
-	else if -1 < ship:verticalspeed {
-		if 0 < TRate {
-			set TRate to TRate - 0.01.
-		}
-	}
-	lock throttle to TRate.
-	lock steering to (-1) * ship:velocity:surface.	
-}
+DescentBurn(2.0, 2, 10).
 
 print "Landing check...".
+lock throttle to 0.
 wait 1.
-until 0.1 > ship:groundspeed {
-	lock steering to (-1) * ship:velocity:surface.	
+until 0.3 > ship:groundspeed {
+	lock steering to heading(0,0).
 }
 
 lock throttle to 0.
@@ -119,3 +84,5 @@ sas on.
 unlock steering.
 
 print "Landed. Lat: " + ship:latitude + " Lon: " + ship:longitude + " Alt: " + ship:altitude.
+
+
