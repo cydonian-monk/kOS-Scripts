@@ -7,8 +7,8 @@
 //
 //   NOTE: Remember to set your throttle to zero before running this script!
 
-declare TarApo to 130000.
-declare TarPer to 120000.
+declare TarApo to 100000.
+declare TarPer to 90000.
 declare TarHoriAlt to 44000.
 declare TarAzi to 90.
 declare TarAoa to 0.
@@ -17,27 +17,35 @@ declare TrajSlope to 90 / TarHoriAlt.
 declare ActiveStage to 0.
 declare OrbitalStage to 3.
 
-print "T minus 10.".
-wait 10.
-
+sas off.
 lock steering to heading(90,90).
-lock throttle to 1.0.
 
+set VarCount to 10.
+until VarCount = 0 {
+  print "T minus " + VarCount + ".".
+  wait 1.
+  set VarCount to VarCount - 1.
+}
+
+lock throttle to 1.0.
 print "Ignition.".
 stage.
 set ActiveStage to ActiveStage + 1.
 
 // TODO AWC - Allow for fairing jettison above select atmospheric limit.
-// TODO AWC - Adapt for multi-staged vehicles; ex: Soyuz and STS. This will 
-//            require detection of parallel stages which lose thrust.... 
-//            Might be something that's better hard-coded.
+when altitude > 52000 then {
+  // TODO AWC - decouple fairings.
+}
+
 // TODO AWC - Allow for hot-staging, which will need to check for fuel 
 //            remaining in the current stage.
 // TODO AWC - Allow for non-destructive staging. The current method will
 //            explode the previous stage from exhaust, resulting in debris.
+
 when maxthrust = 0 then {
-  print "Stage " + ActiveStage + " separation.".
-  //stage. 
+  print "Stage " + ActiveStage + " separation: Shroud Jettison.".
+// NOTE - comment out if no interstage fairing between first and second stage!  
+  stage. 
   set ActiveStage to ActiveStage + 1.    
   print "Beginning Stage " + ActiveStage + " burn.".
   stage.
@@ -46,9 +54,7 @@ when maxthrust = 0 then {
   }
 }
 
-// TODO AWC - airspeed?
 set TarAoa to 90.
-//until ship:velocity:surface:mag > 100 {
 until airspeed > 100 {
   lock steering to heading(TarAzi,TarAoa).
 }
@@ -70,19 +76,14 @@ until apoapsis > TarApo {
   wait 0.1.
 }
 
-// TODO AWC - Allow for down-burns. (Where heading goes below 0 degrees.) 
-//            Not important in stock, but in RSS/RO this will allow for burns to 
-//            apoapsis without wasting ignitions.
 
-print "Target Apoapsis achieved, beginning down-burn.".
+print "Target Apoapsis achieved, continuing burn.".
 
 lock throttle to 0.11.
 set PrevApo to apoapsis.
-set TarAoa to -30.
 lock steering to heading(TarAzi,TarAoa).
-wait 3.
 
-until TarAoa < MinAoa {
+until periapsis + 1000 > altitude {
   if apoapsis > PrevApo {
     set TarAoa to TarAoa - 1.0.
   }
@@ -98,16 +99,18 @@ until TarAoa < MinAoa {
     print "Excessive over-peri.".
     break.
   }
+  if TarAoa < MinAoa {
+    set TarAoa to MinAoa.
+  }
   lock steering to heading(TarAzi,TarAoa).
-  wait 0.01.
+  wait 0.1.
 }
 set TarAzi to 90.
 set TarAoa to 0.
 lock steering to heading(TarAzi,TarAoa).
+lock throttle to 0.
 print "Target Apoapsis achieved. Drift to circularize.".
 
-lock steering to heading(TarAzi,TarAoa).
-lock throttle to 0.
 
 // TODO AWC - This peculiar code is to account for aerodynamic drag during ascent. 
 //            Need to find a more elegant method of handling this, such as down-burns.

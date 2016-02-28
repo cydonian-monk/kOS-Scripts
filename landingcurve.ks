@@ -2,10 +2,15 @@
 //   Simple kOS landing script for pulse-based lander.
 //   Author: Andy Cummings (@cydonian_monk)
 
+// Function to manage landing.
+// 		DescentBurn(AltCutOff, SpdVertical[, SpdGround]).
+//			AltCutoff - Minimum Altitude for Burn.
 declare function DescentBurn {
 	parameter AltCutOff.
 	parameter SpdVertical.
 	parameter SpdGround.
+	
+	declare ThrVal to 1.
 	
 	if 0 = SpdGround {
 		Set SpdGround to SpdVertical.
@@ -15,28 +20,29 @@ declare function DescentBurn {
 	
 	until AltCutOff > alt:radar {
 		if SpdGround < ship:groundspeed {
-			set TRate to 1.
+			set ThrVal to 1.
 		}
 		else if (-1.05 * SpdVertical) > ship:verticalspeed { 
-			if 1 > TRate {
-				set TRate to TRate + 0.01.
+			if 1 > ThrVal {
+				set ThrVal to ThrVal + 0.01.
 			}
 		}
 		else if (-0.95 * SpdVertical) < ship:verticalspeed {
-			if 0 < TRate {
-				set TRate to TRate - 0.01.
+			if 0 < ThrVal {
+				set ThrVal to ThrVal - 0.01.
 			}
 		}
-		lock throttle to TRate.
+		lock throttle to ThrVal.
 		lock steering to (-1) * ship:velocity:surface.
+		
+		if ship:status = "LANDED" {
+			print "Landing detected...".
+			return.
+		}
 	}
 
 	return.
 }.
-
-
-
-declare TRate to 1.
 
 sas off.
 lock steering to (-1) * ship:velocity:surface.
@@ -48,7 +54,7 @@ until VarCount = 0 {
   set VarCount to VarCount - 1.
 }
 
-lock throttle to TRate.
+lock throttle to 1.0.
 
 print "Starting de-orbit burn...".
 
@@ -64,15 +70,15 @@ until 0 > ship:verticalspeed {
 
 print "Entering descent phase.".
 
-DescentBurn(2000, 200, 300).
-DescentBurn(1000, 30, 50).
+DescentBurn(3000, 200, 300).
+DescentBurn(2000, 30, 50).
 DescentBurn(100, 25, 10).
 
 print "Entering final descent phase.".
 
-DescentBurn(2.0, 2, 10).
+DescentBurn(0, 2, 10).
 
-print "Landing check...".
+print "Validating landing...".
 lock throttle to 0.
 wait 1.
 until 0.3 > ship:groundspeed {

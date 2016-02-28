@@ -49,7 +49,7 @@ when LastEngine:FLAMEOUT then {
 }
 
 when altitude > 52000 then {
-  // decouple fairings.
+  // TODO AWC - decouple fairings.
 }
 
 when maxthrust = 0 then {
@@ -121,10 +121,9 @@ until periapsis + 1000 > altitude {
 set TarAzi to 90.
 set TarAoa to 0.
 lock steering to heading(TarAzi,TarAoa).
+lock throttle to 0.
 print "Target Apoapsis achieved. Drift to circularize.".
 
-lock steering to heading(TarAzi,TarAoa).
-lock throttle to 0.
 
 // TODO AWC - This peculiar code is to account for aerodynamic drag during ascent. 
 //            Need to find a more elegant method of handling this, such as down-burns.
