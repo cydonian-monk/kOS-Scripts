@@ -8,10 +8,10 @@ run lib_launch.
 
 declare VarCount to 10.
 
-declare TarApo to 280000.
-declare TarPer to 265000.
+declare TarApo to 160000.
+declare TarPer to 155000.
 // Overly-aggressive THA for POM calculation.
-declare TarHoriAlt to 20000. 
+declare TarHoriAlt to 72000. 
 declare TarAzi to 90.
 declare AscentAoA to 15.
 
@@ -19,7 +19,7 @@ declare TarAoa to 0.
 declare MinAoa to -45.
 declare MaxAoA to 30.
 declare TrajSlope to 90 / TarHoriAlt.
-declare ZLMCutin to 6000.
+declare ZLMCutin to 78000.
 declare ZLMCutout to 78000.
 declare AtmoCeiling to 82000.
 declare PrevAlt to 0.
@@ -244,12 +244,13 @@ until apoapsis > TarApo {
   // Begin the POM or handle the post-ZLM.
   // TODO AWC - Abort modes and crew ejection....
   //print SHIP:DIRECTION:PITCH.
-  print SHIP:HEADING:PITCH.
+  //print SHIP:HEADING:PITCH.
   if (altitude < ZLMCutin) {
     lock steering to heading(TarAzi,TarAoa).
   }
   else if (altitude > ZLMCutout)
-        //or (SHIP:DIRECTION:PITCH < AscentAoA) {
+        //or (SHIP:DIRECTION:PITCH < AscentAoA) 
+		{
     if (2 > FlagZLM) {
 	  print ("Zero-Lift Maneuver completed; Resuming guided flight.").
 	  set FlagZLM to FlagZLM + 1.
