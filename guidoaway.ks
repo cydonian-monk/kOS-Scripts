@@ -11,15 +11,14 @@ declare VarCount to 10.
 declare TarApo to 160000.
 declare TarPer to 155000.
 // Overly-aggressive THA for POM calculation.
-declare TarHoriAlt to 72000. 
+declare TarHoriAlt to 64000. 
 declare TarAzi to 90.
 declare AscentAoA to 15.
 
 declare TarAoa to 0.
 declare MinAoa to -45.
 declare MaxAoA to 30.
-declare TrajSlope to 90 / TarHoriAlt.
-declare ZLMCutin to 78000.
+declare ZLMCutin to 16000.
 declare ZLMCutout to 78000.
 declare AtmoCeiling to 82000.
 declare PrevAlt to 0.
@@ -143,20 +142,21 @@ if FairingList <> 0 {
 	set VarCount to CamShift.
 	SwitchCam(5).
     for FairPart in FairingDecoupleList {
+      print "Fairings decoupled: " + FairPart:NAME.
 	  FairPart:GETMODULE("ModuleEnginesRF"):DOEVENT("activate engine").
       FairPart:GETMODULE("ModuleDecouple"):DOEVENT("decouple").
-      print "Fairings decoupled: " + FairPart:NAME.
     }	
     for FairPart in FairingJettisonList {
-      FairPart:GETMODULE("ProceduralFairingDecoupler"):DOEVENT("jettison").
       print "Fairings jettisoned: " + FairPart:NAME.	  
+      FairPart:GETMODULE("ProceduralFairingDecoupler"):DOEVENT("jettison").
     }
   }
 }
 if ZEngine <> 0 {
-  when altitude > (AtmoCeiling + 5000) then {
+  when altitude > (AtmoCeiling - 10000) then {
     set VarCount to CamShift.
-    SwitchCam(6).  
+    SwitchCam(9).  
+    print "Launch escape tower jettisoned: " + ZEngine:NAME.
     ZEngine:getmodule("ModuleEnginesRF"):doevent("activate engine").
     ZEngine:getmodule("ModuleDecouple"):doevent("decouple").
   }
@@ -211,7 +211,7 @@ SwitchCam(3).
 set PrevAlt to altitude.
 print ("Starting Pitch-Over Maneuver.").
 // Start the Pitch-Over Maneuver and manage the post-Zero-Lift Maneuver.
-until apoapsis > TarApo {
+until (apoapsis + 1000) > TarApo {
   if VarCount < 1 {
     if CamToggle < 1 {
 	  SwitchCam(4).
@@ -233,18 +233,14 @@ until apoapsis > TarApo {
 	  SwitchCam(2).
 	}
 	set CamToggle to 0.
-  }  
+  }
+  // If we're falling, break and let the main ascent handle it.
   if (PrevAlt > altitude) {
     break.
-  }  
-  set TarAoa to (TarHoriAlt - altitude) * TrajSlope.
-  if TarAoa < AscentAoA {
-    set TarAoA to AscentAoA.
   }
-  // Begin the POM or handle the post-ZLM.
-  // TODO AWC - Abort modes and crew ejection....
-  //print SHIP:DIRECTION:PITCH.
-  //print SHIP:HEADING:PITCH.
+
+  set TarAoA to CalcPoM(altitude, TarHoriAlt, 0).
+
   if (altitude < ZLMCutin) {
     lock steering to heading(TarAzi,TarAoa).
   }
@@ -301,12 +297,13 @@ until ((periapsis + 1000) > TarPer) {
 	}
 	set CamToggle to 0.
   }  
+  // If we've pulled the periapsis to near our target, cut.
   if ((periapsis + 1000) > altitude) {
+    print ("Periapsis achieved.").
     break.
   }
   if (apoapsis > (TarApo * 1.2)) {
-    print ("Excessive over-apoapsis.").
-	lock throttle to 0.0.
+    print ("Excessive over-apoapsis.").	
 	break.
   }
   if (altitude < PrevAlt) {
@@ -323,7 +320,7 @@ until ((periapsis + 1000) > TarPer) {
     }	
   }
   set PrevApo to apoapsis.
-  set PrevAlt to altitude.
+  set PrevAlt to altitude.  
   if TarAoA < MinAoa {
     set TarAoA to MinAoa.
   }
@@ -334,6 +331,8 @@ until ((periapsis + 1000) > TarPer) {
   wait 0.02. 
   set VarCount to VarCount - 0.02.
 }
+
+lock throttle to 0.0.
 SwitchCam(5).
 wait 5.
 

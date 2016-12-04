@@ -2,8 +2,12 @@
 //   Script to launch Sputnik for Twitch while AFK.
 //   Author: Andy Cummings (@cydonian_monk)
 //
-declare VarCount to 30.
+run lib_camera.
+run lib_time.
+run lib_launch.
 
+declare VarCount to 30.
+declare CamFlag to 1.
 declare TarApo to 160000.
 declare TarPer to 155000.
 declare TarHoriAlt to 73000.
@@ -20,6 +24,22 @@ declare PrevApo to 0.
 declare REngine to 0.
 declare AEngine to 0.
 
+// Camera Needs.
+declare CamStage to 0.
+declare CamNum to 0.
+declare CamToggle to 0.
+declare CamShift to 0.
+set CamShift to 6 + round(10 * random()).
+
+declare function SwitchCam {
+  parameter NewCam.
+  
+  if CamFlag > 0 {
+    SwitchCamera(CamNum, NewCam).
+  }
+  set CamNum to NewCam.
+}.
+
 sas off.
 lock throttle to 0.0.
 lock steering to heading(90,90).
@@ -35,18 +55,26 @@ for eng in CurVessel {
   }
 }
 
-until VarCount < 11
-{
+// Begin Countdown
+until VarCount < 21 {
   if (mod(VarCount,10) = 0) {
-    print "T minus " + VarCount + " seconds.".
+    PrintTTime(VarCount).
   }
   wait 1.
   set VarCount to VarCount - 1.
 }
-AG2 on.
+SwitchCam(2).
+until VarCount < 11 {
+  if (mod(VarCount,10) = 0) {
+    PrintTTime(VarCount).
+  }
+  wait 1.
+  set VarCount to VarCount - 1.
+}
+SwitchCam(0).
 print "Entering final launch countdown sequence.".
 until VarCount < 6 {
-  print "T minus " + VarCount + ".".
+  PrintTTime(VarCount).
   wait 1.
   set VarCount to VarCount - 1.
 }
@@ -54,26 +82,27 @@ print "Ignition.".
 lock throttle to 1.0.
 stage.
 until VarCount < 1 {
-  print "T minus " + VarCount + ".".
+  PrintTTime(VarCount).
   wait 1.
   set VarCount to VarCount - 1.
 }
+SwitchCam(1).
 print "Liftoff.".
 stage.
 
 // Set the staging events for the engines we just found.
 if REngine <> 0 {
   when REngine:FLAMEOUT then {
-	AG2 off.
-	AG3 on.  
+    SwitchCam(2).
 	set VarCount to 20.
     print "Block R burnout: " + REngine:NAME + ". Jettisoned.".  
+	set CamStage to 2.
     stage.
   }
 }
 if AEngine <> 0 {
   when AEngine:FLAMEOUT then {
-    print "Block A burnout: " + AEngine:NAME + ".".  
+    print "Block A burnout: " + AEngine:NAME + ".".
     stage.
   }
 }
@@ -85,23 +114,27 @@ until VarCount < 1 {
   wait 1.
   set VarCount to VarCount - 1.
 }
-AG2 off.
 
 until airspeed > 100 {
   lock steering to heading(TarAzi,TarAoa).
 }
 
 set VarCount to 10.
-AG3 on.
+SwitchCam(2).
 
 set PrevAlt to altitude.
 until apoapsis > TarApo {
   if VarCount < 1 {
-    AG3 off.
+    SwitchCam(0).
   }
   if VarCount < -10 {
     set VarCount to 10.
-	AG3 on.
+	if CamStage > 1 {
+	  SwitchCam(2).
+	}
+	else {
+	  SwitchCam(1).
+	}
   }  
   if (PrevAlt > altitude) {
     break.
@@ -126,11 +159,11 @@ lock steering to heading(TarAzi,TarAoa).
 set PrevAlt to altitude.
 until ((periapsis + 1000) > TarPer) {
   if VarCount < 1 {
-    AG3 off.
+    SwitchCam(0).
   }
   if VarCount < -10 {
     set VarCount to 10.
-	AG3 on.
+	SwitchCam(2).
   }
   if ((periapsis + 1000) > altitude) {
     break.
@@ -161,9 +194,7 @@ until ((periapsis + 1000) > TarPer) {
   set VarCount to VarCount - 0.02.
 }
 
-AG2 off.
-AG3 off.
-AG4 off.
+SwitchCam(0).
 
 lock throttle to 0.0.
 print "Launch complete.".
@@ -175,12 +206,11 @@ wait 5.
 print "Fairing cap jettison.".
 stage.
 wait 5.
-AG4 on.
+SwitchCam(3).
 wait 5.
 print "Payload deployment.".
 stage.
 
 wait 10.
-AG4 off.
-
+SwitchCam(0).
 wait 5.
