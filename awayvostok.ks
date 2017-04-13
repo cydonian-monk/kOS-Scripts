@@ -10,19 +10,19 @@ run lib_camera.
 run lib_time.
 run lib_launch.
 
-declare VarCount to 20.
-declare CamFlag to 0.
+declare VarCount to 180.
+declare CamFlag to 1.
 
 declare TarApo to 320000.
 declare TarPer to 160000.
 declare TarHoriAlt to 60000.
 declare TarAzi to 37.
-declare AscentAoA to 15.
+declare AscentAoA to 10.
 
 declare SimDelay to 0.02.
 declare TarAoA to 0.
-declare MinAoA to -30.
-declare MaxAoA to 30.
+declare MinAoA to -15.
+declare MaxAoA to 15.
 declare TrajSlope to 90 / TarHoriAlt.
 declare ZLMCutin to 78000.
 declare ZLMCutout to 78000.
@@ -348,12 +348,9 @@ if BEngine <> 0 {
 }
 wait 10.
 
-SwitchCam(5).
+SwitchCam(0).
 // Deploy solar panels and antennas.
-AG10 on.
-wait 10.
-AG7 on.
-SwitchCam(6).
+AG1 on.
 wait 10.
 
 // Kill the headlights and put it in neutral. 
