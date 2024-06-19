@@ -1,17 +1,15 @@
-// guido5k.ks
+// guido.ks
 //   Small byte count launch script.
 //   Author: Andy Cummings (@cydonian_monk)
 //
-declare VarCount to 5.
-declare TarApo to 210000.
-declare TarPer to 200000.
-declare TarHoriAlt to 82000.
+declare VarCount to 2.
+declare TarApo to 120000.
+declare TarPer to 72000.
+declare TarHoriAlt to 32000.
 declare TarAzi to 90.
-declare AscentAoA to 35.
-declare MinAoA to -30.
+declare AscentAoA to 20.
+declare MinAoA to -45.
 declare MaxAoA to 30.
-declare ZLMCutin to 78000.
-declare ZLMCutout to 78000.
 
 declare FUNCTION CalcPoM {
   parameter AltCur.
@@ -147,17 +145,12 @@ print "POM".
 until apoapsis > TarApo {
   set CurAoA to CalcPoM(altitude, TarHoriAlt, 0).
   
-  if (altitude < ZLMCutin) {
-    lock steering to heading(TarAzi,CurAoA).
-  }
-  else if (altitude > ZLMCutin) {
-    print "ZLM".
-    break.  
-  }  
+  lock steering to heading(TarAzi,CurAoA).
+ 
   wait 0.02.
 }
 unlock steering.
-until ((altitude > ZLMCutout)
+until ((altitude > TarHoriAlt)
     or (apoapsis > TarApo)) {
   wait 0.5.
 }
