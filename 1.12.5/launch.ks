@@ -268,7 +268,7 @@ if (verticalspeed < 0) and (periapsis < AltSAFE) {
   logT("EMERG burn, periapsis unsafe at: " + ROUND(periapsis), time:seconds - TimeLAUNCH).
   orbadj(TarApo,TarPer,90,-20,TimeLAUNCH).
 }
-
+wait 1.
 sas off.
 rcs off.
 lock throttle to 0.0.
